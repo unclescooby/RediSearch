@@ -261,7 +261,6 @@ static void GI_Free(IndexIterator *ctx) {
 
 IndexIterator *NewGeoRangeIterator(GeoIndex *idx, IndexSpec *sp, const GeoFilter *gf, double weight,
                                    Yielder *yld) {
-  numResults = 0;
   GeoHashRange ranges[GEO_RANGE_COUNT] = {0};
   populateRange(gf, ranges);
 
