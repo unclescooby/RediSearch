@@ -125,7 +125,7 @@ static double extractUnitFactor(GeoDistance unit) {
       break;
     case GEO_DISTANCE_MI:
       rv = 1609.34;
-      break;  
+      break;
     default:
       rv = -1;
       assert(0);
@@ -133,7 +133,6 @@ static double extractUnitFactor(GeoDistance unit) {
   }
   return rv;
 }
-
 
 /**
  * Populates the numeric range to search for within a given square direction
@@ -167,9 +166,7 @@ static int checkResult(const GeoFilter *gf, const RSIndexResult *cur) {
     return isWithinRadius(gf, cur->num.value, &distance);
   }
   for (size_t ii = 0; ii < cur->agg.numChildren; ++ii) {
-    const RSIndexResult *res = cur->agg.children[ii];
-    if (isWithinRadius(gf, res->num.value, &distance)) {
-      // TODO: use distance to sort
+    if (checkResult(gf, cur->agg.children[ii])) {
       return 1;
     }
   }
@@ -264,19 +261,19 @@ static void GI_Free(IndexIterator *ctx) {
 
 IndexIterator *NewGeoRangeIterator(GeoIndex *idx, IndexSpec *sp, const GeoFilter *gf, double weight,
                                    Yielder *yld) {
+  numResults = 0;
   GeoHashRange ranges[GEO_RANGE_COUNT] = {0};
   populateRange(gf, ranges);
 
-  int numericFilterCount = 0;
+  size_t numericFilterCount = 0;
   GeoIterator *gi = rm_calloc(1, sizeof(*gi));
   gi->gf = gf;
   IndexIterator **subiters = rm_calloc(GEO_RANGE_COUNT, sizeof(*subiters));
   gi->filters = rm_calloc(GEO_RANGE_COUNT, sizeof(*gi->filters));
   for (size_t ii = 0; ii < GEO_RANGE_COUNT; ++ii) {
     if (ranges[ii].min != ranges[ii].max) {
-      gi->filters[numericFilterCount] = 
-          NewNumericFilter(ranges[ii].min, ranges[ii].max, 1, 1);
-      subiters[numericFilterCount] = 
+      gi->filters[numericFilterCount] = NewNumericFilter(ranges[ii].min, ranges[ii].max, 1, 1);
+      subiters[numericFilterCount] =
           NumericTree_GetIterator(idx->rt, sp, gi->filters[numericFilterCount], yld);
       if (!subiters[numericFilterCount]) {
         subiters[numericFilterCount] = NewEmptyIterator();
