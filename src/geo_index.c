@@ -255,6 +255,11 @@ static void GI_Abort(void *ctx) {
 static void GI_Free(IndexIterator *ctx) {
   GeoIterator *gi = (GeoIterator *)ctx;
   gi->wrapped->Free(gi->wrapped);
+  for (size_t ii = 0; ii < GEO_RANGE_COUNT; ++ii) {
+    if (gi->filters[ii]) {
+      NumericFilter_Free(gi->filters[ii]);
+    }
+  }
   rm_free(gi->filters);
   rm_free(gi);
 }
