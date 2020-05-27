@@ -101,29 +101,21 @@ bool isWithinRadiusLonLat(double lon1, double lat1,
   if (dist > radius) return false;
   return true;
 }
-                         
-/*
-int isWithinRadius(double center, double point, double radius, double *distance) {
-  double xyCenter[2], xyPoint[2];
-  decodeGeo(center, xyCenter);
-  decodeGeo(point, xyPoint);
-  return isWithinRadiusLonLat(xyCenter[0], xyCenter[1], xyPoint[0], xyPoint[1],
-                                    radius, distance);
-}
 
-IndexIterator *NewGeoRangeIterator(GeoIndex *gi, const GeoFilter *gf, double weight) {
-  GeoHashRange ranges[GEO_RANGE_COUNT] = {0};
-  calcRanges(gf, ranges);
-
-  int iterCount = 0;
-  IndexIterator **iters = rm_calloc(GEO_RANGE_COUNT, sizeof(*iters));
-  for (size_t ii = 0; ii < GEO_RANGE_COUNT; ++ii) {
-    if (ranges[ii].min != ranges[ii].max) {
-      NumericFilter *filt = NewNumericFilter(ranges[ii].min, ranges[ii].max, 1, 1);
-      iters[iterCount++] = NewNumericFilterIterator(NULL, filt, NULL);
-    }
+int parseGeo(const char *c, double *lon, double *lat) {
+  char *pos = strpbrk(c, " ,");
+  if (!pos) {
+    return REDISMODULE_ERR;
   }
-  iters = rm_realloc(iters, iterCount * sizeof(*iters));
-  IndexIterator *it = NewUnionIterator(iters, iterCount, NULL, 1, 1);
-  return it;
-}*/
+  *pos = '\0';
+  pos++;
+
+  char *end1 = NULL, *end2 = NULL;
+  *lon = strtod(c, &end1);
+  *lat = strtod(pos, &end2);
+  if (*end1 || *end2) {
+    return REDISMODULE_ERR;
+  }
+
+  return REDISMODULE_OK;
+}

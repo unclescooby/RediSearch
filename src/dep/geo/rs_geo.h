@@ -34,4 +34,9 @@ bool isWithinRadiusLonLat(double lon1, double lat1,
                          double lon2, double lat2,
                          double radius, double *distance);
 
+/*
+ * Parse string in format "float,float" to a single double/geohash.
+ */
+int parseGeo(const char *c, double *lon, double *lat);
+
 #endif

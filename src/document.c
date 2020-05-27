@@ -451,27 +451,19 @@ FIELD_BULK_INDEXER(numericIndexer) {
 }
 
 FIELD_PREPROCESSOR(geoPreprocessor) {
-  // TODO: streamline
+  double lon, lat;
   const char *c = RedisModule_StringPtrLen(field->text, NULL);
-  char *pos = strpbrk(c, " ,");
-  if (!pos) {
+
+  if (parseGeo(c, &lon, &lat) != REDISMODULE_OK) {
     QueryError_SetCode(status, QUERY_EGEOFORMAT);
     return -1;
-  }
-  *pos = '\0';
-  pos++;
-
-  char *end1 = NULL, *end2 = NULL;
-  double lon = strtod(c, &end1);
-  double lat = strtod(pos, &end2);
-  if (*end1 || *end2) {
-    return REDISMODULE_ERR;
   }
 
   double geohash = calcGeoHash(lon, lat);
   if (geohash == INVALID_GEOHASH) {
     return REDISMODULE_ERR;
   }
+
   fdata->numeric = geohash;
   return 0;
 }
