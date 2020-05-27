@@ -849,13 +849,11 @@ RedisModuleString *IndexSpec_GetFormattedKey(IndexSpec *sp, const FieldSpec *fs,
     RedisSearchCtx sctx = {.redisCtx = RSDummyContext, .spec = sp};
     switch (forType) {
       case INDEXFLD_T_NUMERIC:
+      case INDEXFLD_T_GEO: // TODO?? change the name
         ret = fmtRedisNumericIndexKey(&sctx, fs->name);
         break;
       case INDEXFLD_T_TAG:
         ret = TagIndex_FormatName(&sctx, fs->name);
-        break;
-      case INDEXFLD_T_GEO:
-        ret = RedisModule_CreateStringPrintf(RSDummyContext, GEOINDEX_KEY_FMT, sp->name, fs->name);
         break;
       case INDEXFLD_T_FULLTEXT:  // Text fields don't get a per-field index
       default:
