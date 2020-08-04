@@ -19,7 +19,6 @@
 /venv*/
 srcutil/lemon
 src/query_parser/lemon
-deps/googletest.*
 .vscode/*
 .idea/*
 .project
