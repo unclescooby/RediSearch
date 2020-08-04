@@ -92,7 +92,7 @@ You can open ```redis-cli``` in another terminal to interact with it.
 
 ## Running tests
 There are several sets of unit tests:
-* C tests, located in ```tests/tests```, run by ```make c_tests```.
+* C tests, located in ```tests/ctests```, run by ```make c_tests```.
 * C++ tests (enabled by GTest), located in ```tests/cpptests```, run by ```make cpp_tests```.
 * Python tests (enabled by RLTest), located in ```tests/pytests```, run by ```make pytest```.
 

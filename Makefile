@@ -20,10 +20,10 @@ make run           # run redis with RediSearch
 
 make test          # run all tests (via ctest)
   TEST=regex
-make pytest        # run python tests (tests/pytest)
+make pytest        # run python tests (tests/pytests)
   TEST=name          # e.g. TEST=test:testSearch
   GDB=1              # RLTest interactive debugging
-make c_tests       # run C tests (from tests/tests)
+make c_tests       # run C tests (from tests/ctests)
 make cpp_tests     # run C++ tests (from tests/cpptests)
   TEST=name          # e.g. TEST=FGCTest.testRemoveLastBlock
 
@@ -153,9 +153,9 @@ pytest:
 		exit 1 ;\
 	fi
 ifneq ($(TEST),)
-	@cd tests/pytest; PYDEBUG=1 python -m RLTest --test $(TEST) $(RLTEST_GDB) -s --module $(abspath $(TARGET))
+	@cd tests/pytests; PYDEBUG=1 python -m RLTest --test $(TEST) $(RLTEST_GDB) -s --module $(abspath $(TARGET))
 else
-	@cd tests/pytest; python -m RLTest --module $(abspath $(TARGET))
+	@cd tests/pytests; python -m RLTest --module $(abspath $(TARGET))
 endif
 
 ifeq ($(GDB),1)
@@ -166,12 +166,12 @@ endif
 
 c_tests:
 	set -e ;\
-	find $(abspath $(BINROOT)/tests/tests) -name "test_*" -type f -executable -exec ${GDB_CMD} {} \;
+	find $(abspath $(BINROOT)/tests/ctests) -name "test_*" -type f -executable -exec ${GDB_CMD} {} \;
 
 cpp_tests:
 ifeq ($(TEST),)
 	set -e ;\
-	find $(abspath $(BINROOT)/tests/cpptests) -name "t_*" -type f -executable -exec ${GDB_CMD} {} \;
+	find $(abspath $(BINROOT)/tests/cpptests) -name "test_*" -type f -executable -exec ${GDB_CMD} {} \;
 else
 	set -e ;\
 	$(GDB_CMD) $(abspath $(BINROOT)/tests/cpptests/$(TEST))
