@@ -435,7 +435,7 @@ const void* RediSearch_ResultsIteratorNext(RS_ApiIter* iter, IndexSpec* sp, size
     }
     iter->lastmd = md;
     if (len) {
-      *len = sdslen(md->keyPtr);
+      *len = md->keyLen;
     }
     return md->keyPtr;
   }

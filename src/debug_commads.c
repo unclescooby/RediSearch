@@ -44,8 +44,9 @@ static void ReplyReaderResults(IndexReader *reader, RedisModuleCtx *ctx) {
 
 static RedisModuleString *getFieldKeyName(IndexSpec *spec, RedisModuleString *fieldNameRS,
                                           FieldType t) {
-  const char *fieldName = RedisModule_StringPtrLen(fieldNameRS, NULL);
-  const FieldSpec *fieldSpec = IndexSpec_GetField(spec, fieldName, strlen(fieldName));
+  size_t len;                                  
+  const char *fieldName = RedisModule_StringPtrLen(fieldNameRS, &len);
+  const FieldSpec *fieldSpec = IndexSpec_GetField(spec, fieldName, len);
   if (!fieldSpec) {
     return NULL;
   }
@@ -279,7 +280,7 @@ DEBUG_COMMAND(IdToDocId) {
   if (!doc || (doc->flags & Document_Deleted)) {
     RedisModule_ReplyWithError(sctx->redisCtx, "document was removed");
   } else {
-    RedisModule_ReplyWithStringBuffer(sctx->redisCtx, doc->keyPtr, strlen(doc->keyPtr));
+    RedisModule_ReplyWithStringBuffer(sctx->redisCtx, doc->keyPtr, doc->keyLen);
   }
 end:
   SearchCtx_Free(sctx);

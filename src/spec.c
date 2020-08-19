@@ -636,7 +636,7 @@ IndexSpecCache *IndexSpec_BuildSpecCache(const IndexSpec *spec) {
   ret->refcount = 1;
   for (size_t ii = 0; ii < spec->numFields; ++ii) {
     ret->fields[ii] = spec->fields[ii];
-    ret->fields[ii].name = rm_strdup(ret->fields[ii].name);
+    ret->fields[ii].name = ret->fields[ii].name;
   }
   return ret;
 }
@@ -644,9 +644,6 @@ IndexSpecCache *IndexSpec_BuildSpecCache(const IndexSpec *spec) {
 void IndexSpecCache_Decref(IndexSpecCache *c) {
   if (--c->refcount) {
     return;
-  }
-  for (size_t ii = 0; ii < c->nfields; ++ii) {
-    rm_free(c->fields[ii].name);
   }
   rm_free(c->fields);
   rm_free(c);
@@ -1533,7 +1530,7 @@ void Indexes_RdbSave(RedisModuleIO *rdb, int when) {
     IndexSpec *sp = dictGetVal(entry);
     // we save the name plus the null terminator
     RedisModule_SaveStringBuffer(rdb, sp->name, strlen(sp->name) + 1);
-    RedisModule_SaveUnsigned(rdb, (uint)sp->flags);
+    RedisModule_SaveUnsigned(rdb, (uint64_t)sp->flags);
 
     RedisModule_SaveUnsigned(rdb, sp->numFields);
     for (int i = 0; i < sp->numFields; i++) {

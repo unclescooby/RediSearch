@@ -214,6 +214,7 @@ t_docId DocTable_Put(DocTable *t, const char *s, size_t n, double score, u_char 
   if (!dmd) {
     dmd = rm_calloc(1, sizeof(RSDocumentMetadata));
     dmd->keyPtr = keyPtr;
+    dmd->keyLen = n;
     dmd->score = score;
     dmd->flags = flags;
     dmd->payload = dpl;
@@ -247,7 +248,7 @@ const char *DocTable_GetKey(DocTable *t, t_docId docId, size_t *lenp) {
     *lenp = 0;
     return NULL;
   }
-  *lenp = sdslen(dmd->keyPtr);
+  *lenp = dmd->keyLen;
   return dmd->keyPtr;
 }
 
@@ -341,7 +342,8 @@ int DocTable_Replace(DocTable *t, const char *from_str, size_t from_len,
   DocIdMap_Put(&t->dim, to_str, to_len, id);
   RSDocumentMetadata *dmd = DocTable_Get(t, id);
   sdsfree(dmd->keyPtr);
-  dmd->keyPtr = sdsnewlen(to_str, to_len);                                    
+  dmd->keyPtr = sdsnewlen(to_str, to_len);
+  dmd->keyLen = to_len;
   return REDISMODULE_OK;                   
 }
 
@@ -356,7 +358,7 @@ void DocTable_RdbSave(DocTable *t, RedisModuleIO *rdb) {
     }
     DLLIST2_FOREACH(it, &t->buckets[i].lroot) {
       const RSDocumentMetadata *dmd = DLLIST2_ITEM(it, RSDocumentMetadata, llnode);
-      RedisModule_SaveStringBuffer(rdb, dmd->keyPtr, sdslen(dmd->keyPtr));
+      RedisModule_SaveStringBuffer(rdb, dmd->keyPtr, dmd->keyLen);
       RedisModule_SaveUnsigned(rdb, dmd->flags);
       RedisModule_SaveUnsigned(rdb, dmd->maxFreq);
       RedisModule_SaveUnsigned(rdb, dmd->len);
@@ -423,6 +425,7 @@ void DocTable_RdbLoad(DocTable *t, RedisModuleIO *rdb, int encver) {
     //    dmd->id = encver < INDEX_MIN_COMPACTED_DOCTABLE_VERSION ? i :
     //    RedisModule_LoadUnsigned(rdb);
     dmd->keyPtr = sdsnewlen(tmpPtr, len);
+    dmd->keyLen = len;
     RedisModule_Free(tmpPtr);
 
     dmd->flags = RedisModule_LoadUnsigned(rdb);
@@ -474,7 +477,7 @@ void DocTable_RdbLoad(DocTable *t, RedisModuleIO *rdb, int encver) {
       DMD_Free(dmd);
     } else {
       RedisModuleString *keyRedisStr =
-          RedisModule_CreateString(NULL, dmd->keyPtr, sdslen(dmd->keyPtr));
+          RedisModule_CreateString(NULL, dmd->keyPtr, dmd->keyLen);
       RedisModule_FreeString(NULL, keyRedisStr);
       //      DocIdMap_Put(&t->dim, dmd->keyPtr, sdslen(dmd->keyPtr), dmd->id);
       //      DocTable_Set(t, dmd->id, dmd);

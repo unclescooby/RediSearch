@@ -66,6 +66,7 @@ typedef struct RSDocumentMetadata_s {
 
   /* The actual key of the document, not the internal incremental id */
   char *keyPtr;
+  size_t keyLen;
 
   /* The a-priory document score as given by the user on insertion */
   float score;

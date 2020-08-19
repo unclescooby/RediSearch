@@ -295,7 +295,7 @@ static int getKeyCommon(const RLookupKey *kk, RLookupRow *dst, RLookupLoadOption
   if (!*keyobj) {
     RedisModuleCtx *ctx = options->sctx->redisCtx;
     RedisModuleString *keyName =
-        RedisModule_CreateString(ctx, options->dmd->keyPtr, strlen(options->dmd->keyPtr));
+        RedisModule_CreateString(ctx, options->dmd->keyPtr, options->dmd->keyLen);
     *keyobj = RedisModule_OpenKey(ctx, keyName, REDISMODULE_READ);
     RedisModule_FreeString(ctx, keyName);
     if (!*keyobj) {
@@ -406,7 +406,7 @@ static int RLookup_HGETALL(RLookup *it, RLookupRow *dst, RLookupLoadOptions *opt
   RedisModuleCallReply *rep = NULL;
   RedisModuleCtx *ctx = options->sctx->redisCtx;
   RedisModuleString *krstr =
-      RedisModule_CreateString(ctx, options->dmd->keyPtr, sdslen(options->dmd->keyPtr));
+      RedisModule_CreateString(ctx, options->dmd->keyPtr, options->dmd->keyLen);
 
   rep = RedisModule_Call(ctx, "HGETALL", "s", krstr);
 

@@ -24,7 +24,7 @@ static inline const char *DMD_KeyPtrLen(const RSDocumentMetadata *dmd, size_t *l
 // Convenience function to create a RedisModuleString from the document's key
 static inline RedisModuleString *DMD_CreateKeyString(const RSDocumentMetadata *dmd,
                                                      RedisModuleCtx *ctx) {
-  return RedisModule_CreateString(ctx, dmd->keyPtr, sdslen(dmd->keyPtr));
+  return RedisModule_CreateString(ctx, dmd->keyPtr, dmd->keyLen);
 }
 
 /* Map between external id an incremental id */

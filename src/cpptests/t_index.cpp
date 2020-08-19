@@ -987,7 +987,7 @@ TEST_F(IndexTest, testDocTable) {
 
     ASSERT_EQ((int)xid, i + 1);
 
-    int rc = DocTable_Delete(&dt, dmd->keyPtr, sdslen(dmd->keyPtr));
+    int rc = DocTable_Delete(&dt, dmd->keyPtr, dmd->keyLen);
     ASSERT_EQ(1, rc);
     ASSERT_TRUE((int)(dmd->flags & Document_Deleted));
     DMD_Decref(dmd);
