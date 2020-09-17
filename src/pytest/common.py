@@ -1,5 +1,6 @@
 from collections import Iterable
 import time
+import os
 
 def getConnectionByEnv(env):
     conn = None
@@ -43,3 +44,10 @@ def sortedResults(res):
     data = sorted(data)
     res = [n] + [item for sublist in data for item in sublist]
     return res
+
+def skipOnSanitizer(env):
+    try:
+        os.environ['RS_GLOBAL_DTORS']
+        env.skip()
+    except:
+        pass

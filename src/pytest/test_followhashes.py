@@ -2,7 +2,7 @@
 
 import unittest
 from includes import *
-from common import getConnectionByEnv, waitForIndex, sortedResults, toSortedFlatList
+from common import getConnectionByEnv, waitForIndex, sortedResults, toSortedFlatList, skipOnSanitizer
 from time import sleep
 from RLTest import Env
 
@@ -482,6 +482,7 @@ def testExpire(env):
     env.expect('FT.SEARCH idx foo').equal([0L])
 
 def testEvicted(env):
+    skipOnSanitizer(env)
     env.skipOnCluster()
     conn = getConnectionByEnv(env)
     env.expect('FT.CREATE idx SCHEMA test TEXT').equal('OK')
@@ -523,6 +524,8 @@ def createExpire(env, N):
   env.assertEqual(res, {})
 
 def testExpiredDuringSearch(env):
+  skipOnSanitizer(env)
+
   N = 100
   createExpire(env, N)
   res = env.cmd('FT.SEARCH', 'idx', 'hello*', 'nocontent', 'limit', '0', '200')
@@ -535,6 +538,8 @@ def testExpiredDuringSearch(env):
                                                                'foo', ['txt1', 'hello', 'n', '0']]))
 
 def testExpiredDuringAggregate(env):
+  skipOnSanitizer(env)
+
   N = 100
   res = [1L, ['txt1', 'hello', 'COUNT', '2']]
   
