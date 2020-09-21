@@ -103,7 +103,6 @@ ADD_SUBDIRECTORY(src/rmutil)
 ADD_SUBDIRECTORY(src/dep/friso)
 ADD_SUBDIRECTORY(src/dep/snowball)
 ADD_SUBDIRECTORY(src/dep/phonetics)
-ADD_SUBDIRECTORY(src/c_utils)
 
 FILE(GLOB RS_SRC
     "src/*.c"
