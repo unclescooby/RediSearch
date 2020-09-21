@@ -151,6 +151,7 @@ RLTEST_GDB=-i
 endif
 
 pytest:
+	set -e ;\
 	@if ! command -v redis-server > /dev/null; then \
 		echo "Cannot find redis-server. Aborting." ;\
 		exit 1 ;\
@@ -168,16 +169,14 @@ GDB_CMD=
 endif
 
 c_tests:
-	set -e ;\
 	find $(abspath $(BINROOT)/tests/ctests) -name "test_*" -type f -executable -exec ${GDB_CMD} {} \;
 
 cpp_tests:
 ifeq ($(TEST),)
-	set -e ;\
 	find $(abspath $(BINROOT)/tests/cpptests) -name "test_*" -type f -executable -exec ${GDB_CMD} {} \;
 else
 	set -e ;\
-	$(GDB_CMD) $(abspath $(BINROOT)/tests/cpptests/$(TEST))
+	$(GDB_CMD) $(abspath $(BINROOT)/tests/cpptests/$(TEST)) --gtest_filter=$(TEST)
 endif
 
 .PHONY: test pytest c_tests cpp_tests
