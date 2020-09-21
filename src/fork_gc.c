@@ -207,6 +207,9 @@ static bool FGC_childRepairInvidx(ForkGC *gc, RedisSearchCtx *sctx, InvertedInde
   }
 
   for (size_t i = 0; i < idx->size; ++i) {
+    params->bytesCollected = 0;
+    params->bytesBeforFix = 0;
+    params->bytesAfterFix = 0;
     IndexBlock *blk = idx->blocks + i;
     if (blk->lastId - blk->firstId > UINT32_MAX) {
       // Skip over blocks which have a wide variation. In the future we might
@@ -242,10 +245,10 @@ static bool FGC_childRepairInvidx(ForkGC *gc, RedisSearchCtx *sctx, InvertedInde
       ixmsg.nblocksRepaired++;
     }
 
-    ixmsg.nbytesCollected += params->bytesCollected;
+    ixmsg.nbytesCollected += (params->bytesBeforFix - params->bytesAfterFix);
     ixmsg.ndocsCollected += nrepaired;
     if (i == idx->size - 1) {
-      ixmsg.lastblkBytesCollected = params->bytesCollected;
+      ixmsg.lastblkBytesCollected = ixmsg.nbytesCollected;
       ixmsg.lastblkDocsRemoved = nrepaired;
       ixmsg.lastblkNumDocs = blk->numDocs + nrepaired;
     }
@@ -387,7 +390,7 @@ static FGCError recvNumericTagHeader(ForkGC *fgc, char **fieldName, size_t *fiel
   return FGC_COLLECTED;
 }
 
-static void sendKht(ForkGC *gc, const khash_t(cardvals) *kh) {
+static void sendKht(ForkGC *gc, const khash_t(cardvals) * kh) {
   size_t n = 0;
   if (!kh) {
     FGC_SEND_VAR(gc, n);
@@ -754,6 +757,18 @@ static FGCError FGC_parentHandleTerms(ForkGC *gc, RedisModuleCtx *rctx) {
   FGC_applyInvertedIndex(gc, &idxbufs, &info, idx);
   FGC_updateStats(sctx, gc, info.ndocsCollected, info.nbytesCollected);
 
+  if (idx->numDocs == 0) {
+    // inverted index was cleaned entirely lets free it
+    RedisModuleString *termKey = fmtRedisTermKey(sctx, term, len);
+    size_t formatedTremLen;
+    const char *formatedTrem = RedisModule_StringPtrLen(termKey, &formatedTremLen);
+    if (sctx->spec->keysDict) {
+      dictDelete(sctx->spec->keysDict, termKey);
+    }
+    Trie_Delete(sctx->spec->terms, term, len);
+    RedisModule_FreeString(sctx->redisCtx, termKey);
+  }
+
 cleanup:
 
   if (idxKey) {
@@ -890,7 +905,10 @@ static void applyNumIdx(ForkGC *gc, RedisSearchCtx *sctx, NumGcInfo *ninfo) {
   InvIdxBuffers *idxbufs = &ninfo->idxbufs;
   MSG_IndexInfo *info = &ninfo->info;
   FGC_applyInvertedIndex(gc, idxbufs, info, currNode->range->entries);
+
+  currNode->range->invertedIndexSize -= info->nbytesCollected;
   FGC_updateStats(sctx, gc, info->ndocsCollected, info->nbytesCollected);
+
   resetCardinality(ninfo, currNode);
 }
 
@@ -1128,6 +1146,9 @@ static int periodicCb(RedisModuleCtx *ctx, void *privdata) {
     if (gc->type == FGC_TYPE_NOKEYSPACE) {
       RedisModule_ThreadSafeContextUnlock(ctx);
     }
+
+    close(gc->pipefd[GC_READERFD]);
+    close(gc->pipefd[GC_WRITERFD]);
 
     return 0;
   }

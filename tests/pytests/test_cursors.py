@@ -31,20 +31,27 @@ def exhaustCursor(env, idx, resp, *args):
     return rows
 
 def getCursorStats(env, idx='idx'):
-    return to_dict(to_dict(env.cmd('FT.INFO', idx))['cursor_stats'])
+    info = env.cmd('FT.INFO', idx)
+    try:
+        info_dict = to_dict(info)['cursor_stats']
+    except:
+        return {'index_total' : 0, 'global_total' : 0}
+    return to_dict(info_dict)
 
 def testCursors(env):
     loadDocs(env)
     query = ['FT.AGGREGATE', 'idx', '*', 'LOAD', 1, '@f1', 'WITHCURSOR']
     resp = env.cmd(*query)
+
+    # Check info and see if there are other cursors
+    info = getCursorStats(env)
+    print info
+    env.assertEqual(0, info['global_total'])
+
     resp = exhaustCursor(env, 'idx', resp)
     env.assertEqual(1, len(resp)) # Only one response
     env.assertEqual(0, resp[0][1])
     env.assertEqual(101, len(resp[0][0]))
-
-    # Check info and see if there are other cursors
-    info = getCursorStats(env)
-    env.assertEqual(0, info['global_total'])
 
     # Issue the same query, but using a specified count
     resp = env.cmd(*(query[::]+['COUNT', 10]))
@@ -108,6 +115,9 @@ def testCapacities(env):
     env.cmd('FT.CURSOR', 'DEL', 'idx1', c[-1])
 
 def testTimeout(env):
+    # currently this test is only valid on one shard because coordinator creates more cursor which are not clean
+    # with the same timeout
+    env.skipOnCluster() 
     loadDocs(env, idx='idx1')
     # Maximum idle of 1ms
     q1 = ['FT.AGGREGATE', 'idx1', '*', 'LOAD', '1', '@f1', 'WITHCURSOR', 'COUNT', 10, 'MAXIDLE', 1]

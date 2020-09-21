@@ -3,7 +3,7 @@
 
 ## Redis Cloud
 
-RediSearch is available on all Redis Cloud managed services.  Redis Cloud Essentials offers a completely free managed databbases up to 30MB.
+RediSearch is available on all Redis Cloud managed services.  Redis Cloud Essentials offers a completely free managed databases up to 30MB.
 
 [Get started here](https://redislabs.com/try-free/)
 
@@ -19,27 +19,28 @@ First download the pre-compiled version from [RedisLabs download center](https:/
 
 Next, run Redis with RediSearch: 
 
-```
+```sh
 $ redis-server --loadmodule /path/to/module/src/redisearch.so
 ```
 
 ## Building and running from source
 
-First, clone the git repo:
+First, clone the git repo (make sure not to omit the `--recursive` option, to properly clone submodules):
 
-```
+```sh
 git clone --recursive https://github.com/RediSearch/RediSearch.git
 ```
 
-Next, build:
+Next, install dependencies and build:
 
-```
+```sh
+sudo make setup
 make build
 ```
 
 Finally, run Redis with RediSearch:
 
-```
+```sh
 make run
 ```
 
@@ -48,15 +49,15 @@ For more elaborate build instructions, see the [Development page](Development.md
 ## Creating an index with fields and weights (default weight is 1.0)
 
 ```
-127.0.0.1:6379> FT.CREATE myIdx SCHEMA title TEXT WEIGHT 5.0 body TEXT url TEXT
+127.0.0.1:6379> FT.CREATE myIdx ON HASH PREFIX 1 doc: SCHEMA title TEXT WEIGHT 5.0 body TEXT url TEXT
 OK 
 
 ```
 
 ## Adding documents to the index
 ```
-127.0.0.1:6379> FT.ADD myIdx doc1 1.0 FIELDS title "hello world" body "lorem ipsum" url "http://redis.io" 
-OK
+127.0.0.1:6379> hset doc:1 title "hello world" body "lorem ipsum" url "http://redis.io" 
+(integer) 3
 ```
 
 ## Searching the index
@@ -64,7 +65,7 @@ OK
 ```
 127.0.0.1:6379> FT.SEARCH myIdx "hello world" LIMIT 0 10
 1) (integer) 1
-2) "doc1"
+2) "doc:1"
 3) 1) "title"
    2) "hello world"
    3) "body"
@@ -80,7 +81,7 @@ OK
 ## Dropping the index
 
 ```
-127.0.0.1:6379> FT.DROP myIdx
+127.0.0.1:6379> FT.DROPINDEX myIdx 
 OK
 ```
 

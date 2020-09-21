@@ -161,7 +161,9 @@ $ redis-server --loadmodule ./redisearch.so MAXEXPANSIONS 1000
 
 ## MAXDOCTABLESIZE
 
-The maximum size of the internal hash table used for storing the documents.
+The maximum size of the internal hash table used for storing the documents. 
+Notice, this configuration doesn't limit the amount of documents that can be stored but only the hash table internal array max size.
+Decreasing this property can decrease the memory overhead in case the index holds a small amount of documents that are constantly updated.
 
 ### Default
 
@@ -171,6 +173,23 @@ The maximum size of the internal hash table used for storing the documents.
 
 ```
 $ redis-server --loadmodule ./redisearch.so MAXDOCTABLESIZE 3000000
+```
+
+---
+
+## MAXSEARCHRESULTS
+
+The maximum number of results to be returned by FT.SEARCH command if LIMIT is used.
+Setting value to `-1` will remove the limit. 
+
+### Default
+
+1000000
+
+### Example
+
+```
+$ redis-server --loadmodule ./redisearch.so MAXSEARCHRESULTS 3000000
 ```
 
 ---
@@ -208,6 +227,34 @@ $ redis-server --loadmodule ./redisearch.so CURSOR_MAX_IDLE 500000
 ### Notes
 
 * added in v1.6
+
+---
+
+## PARTIAL_INDEXED_DOCS
+
+Enable/disable Redis command filter. The filter optimizes partial updates of hashes
+and may avoid reindexing of the hash if changed fields are not part of schema. 
+
+### Considerations
+
+The Redis command filter will be executed upon each Redis Command.  Though the filter is
+optimised, this will introduce a small increase in latency on all commands.  
+This configuration is therefore best used with partial indexed documents where the non-
+indexed fields are updated frequently.
+
+### Default
+
+"0"
+
+### Example
+
+```
+$ redis-server --loadmodule ./redisearch.so PARTIAL_INDEXED_DOCS 1
+```
+
+### Notes
+
+* added in v2.0.0
 
 ---
 
@@ -318,3 +365,22 @@ $ redis-server --loadmodule ./redisearch.so GC_POLICY FORK FORK_GC_CLEAN_THRESHO
 
 * only to be combined with `GC_POLICY FORK`
 * added in v1.4.16
+
+## UPGRADE_INDEX
+
+This configuration is a special configuration introduced to upgrade indices from v1.x RediSearch versions, further referred to as 'legacy indices.' This configuration option needs to be given for each legacy index, followed by the index name and all valid option for the index description ( also referred to as the `ON` arguments for following hashes) as described on [ft.create api](Commands.md#ftcreate). See [Upgrade to 2.0](Upgrade_to_2.0.md) for more information.
+
+### Default
+
+There is no default for index name, and the other arguments have the same defaults as on [ft.create api](Commands.md#ftcreate)
+
+### Example
+
+```
+$ redis-server --loadmodule ./redisearch.so UPGRADE_INDEX idx PREFIX 1 tt LANGUAGE french LANGUAGE_FIELD MyLang SCORE 0.5 SCORE_FIELD MyScore PAYLOAD_FIELD MyPayload UPGRADE_INDEX idx1
+```
+
+### Notes
+
+* If the RDB file does not contain a legacy index that's specified in the configuration, a warning message will be added to the log file and loading will continue.
+* If the RDB file contains a legacy index that wasn't specified in the configuration loading will fail and the server won't start.

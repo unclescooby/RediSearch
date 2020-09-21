@@ -47,7 +47,7 @@ IndexSpec* RediSearch_CreateIndex(const char* name, const RSIndexOptions* option
 
 void RediSearch_DropIndex(IndexSpec* sp) {
   RWLOCK_ACQUIRE_WRITE();
-  IndexSpec_FreeSync(sp);
+  IndexSpec_FreeInternals(sp);
   RWLOCK_RELEASE();
 }
 
@@ -153,6 +153,9 @@ int RediSearch_DeleteDocument(IndexSpec* sp, const void* docKey, size_t len) {
     if (DocTable_Delete(&sp->docs, docKey, len)) {
       // Delete returns true/false, not RM_{OK,ERR}
       sp->stats.numDocuments--;
+      if (sp->gc) {
+        GCContext_OnDelete(sp->gc);
+      }
     } else {
       rc = REDISMODULE_ERR;
     }

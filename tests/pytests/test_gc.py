@@ -54,7 +54,7 @@ def testBasicGCWithEmptyInvIdx(env):
     env.cmd('ft.debug', 'GC_FORCEINVOKE', 'idx')
 
     # check that the gc collected the deleted docs
-    env.assertEqual(env.cmd('ft.debug', 'DUMP_INVIDX', 'idx', 'world'), [])
+    env.expect('ft.debug', 'DUMP_INVIDX', 'idx', 'world').error().contains('Can not find the inverted index')
 
 def testNumericGCIntensive(env):
     if env.isCluster():
@@ -140,7 +140,9 @@ def testDeleteEntireBlock(env):
     # delete docs in the midle of the inverted index, make sure the binary search are not braken
     for i in range(400, 501):
         env.expect('FT.DEL', 'idx', 'doc%d' % i).equal(1)
-    env.expect('FT.SEARCH', 'idx', '@test:checking @test2:checking250').equal([1L, 'doc250', ['test', 'checking', 'test2', 'checking250']])
+    res = env.cmd('FT.SEARCH', 'idx', '@test:checking @test2:checking250')
+    env.assertEqual(res[0:2],[1L, 'doc250'])
+    env.assertEqual(set(res[2]), set(['test', 'checking', 'test2', 'checking250']))
 
     # actually clean the inverted index, make sure the binary search are not braken, check also after rdb reload
     for i in range(100):
@@ -148,7 +150,9 @@ def testDeleteEntireBlock(env):
         env.cmd('ft.debug', 'GC_FORCEINVOKE', 'idx')
     for _ in env.reloading_iterator():
         waitForIndex(env, 'idx')
-        env.expect('FT.SEARCH', 'idx', '@test:checking @test2:checking250').equal([1L, 'doc250', ['test', 'checking', 'test2', 'checking250']])
+        res = env.cmd('FT.SEARCH', 'idx', '@test:checking @test2:checking250')
+        env.assertEqual(res[0:2],[1L, 'doc250'])
+        env.assertEqual(set(res[2]), set(['test', 'checking', 'test2', 'checking250']))        
 
 def testGCIntegrationWithRedisFork(env):
     if env.env == 'existing-env':
@@ -195,9 +199,7 @@ def testGCThreshold(env):
 
     env.cmd('ft.debug', 'GC_FORCEINVOKE', 'idx')
 
-    debug_rep = env.cmd('FT.DEBUG', 'DUMP_INVIDX', 'idx', 'foo')
-
-    env.assertEqual(len(debug_rep), 0)
+    env.expect('FT.DEBUG', 'DUMP_INVIDX', 'idx', 'foo').error().contains('Can not find the inverted index')
 
     # retry with replace
     for i in range(1000):
@@ -216,28 +218,24 @@ def testGCThreshold(env):
 
     env.cmd('ft.debug', 'GC_FORCEINVOKE', 'idx')
 
-    debug_rep = env.cmd('FT.DEBUG', 'DUMP_INVIDX', 'idx', 'foo')
-
-    env.assertEqual(len(debug_rep), 0)
+    env.expect('FT.DEBUG', 'DUMP_INVIDX', 'idx', 'foo').error().contains('Can not find the inverted index')
 
     # retry with replace partial
 
-    debug_rep = env.cmd('FT.DEBUG', 'DUMP_INVIDX', 'idx', 'foo')
+    debug_rep = env.cmd('FT.DEBUG', 'DUMP_INVIDX', 'idx', 'foo1')
 
     for i in range(999):
         env.expect('FT.ADD', 'idx', 'doc%d' % i, '1.0', 'REPLACE', 'PARTIAL', 'FIELDS', 'title', 'foo2').ok()
 
     env.cmd('ft.debug', 'GC_FORCEINVOKE', 'idx')
 
-    env.expect('FT.DEBUG', 'DUMP_INVIDX', 'idx', 'foo').equal(debug_rep)
+    env.expect('FT.DEBUG', 'DUMP_INVIDX', 'idx', 'foo1').equal(debug_rep)
 
-    env.expect('FT.ADD', 'idx', 'doc999', '1.0', 'REPLACE', 'PARTIAL', 'FIELDS', 'title', 'foo1').ok()
+    env.expect('FT.ADD', 'idx', 'doc999', '1.0', 'REPLACE', 'PARTIAL', 'FIELDS', 'title', 'foo2').ok()
 
     env.cmd('ft.debug', 'GC_FORCEINVOKE', 'idx')
 
-    debug_rep = env.cmd('FT.DEBUG', 'DUMP_INVIDX', 'idx', 'foo')
-
-    env.assertEqual(len(debug_rep), 0)
+    env.expect('FT.DEBUG', 'DUMP_INVIDX', 'idx', 'foo1').error().contains('Can not find the inverted index')
 
 def testGCShutDownOnExit(env):
     if env.env == 'existing-env' or env.env == 'enterprise' or env.isCluster() or platform.system() == 'Darwin':
@@ -252,5 +250,24 @@ def testGCShutDownOnExit(env):
     env.start()
 
     # make sure server started successfully
+    env.cmd('flushall')
     env.expect('FT.CREATE', 'idx', 'ON', 'HASH', 'SCHEMA', 'title', 'TEXT', 'SORTABLE').ok()
     waitForIndex(env, 'idx')
+
+def testGFreeEmpryTerms(env):
+    if env.env == 'existing-env' or env.env == 'enterprise' or env.isCluster():
+        env.skip()
+
+    env = Env(moduleArgs='GC_POLICY FORK')
+    env.expect('FT.CREATE', 'idx', 'ON', 'HASH', 'SCHEMA', 't', 'TEXT').ok()
+
+    for i in range(200):
+        env.expect('hset', 'doc%d'%i, 't', 'foo')
+
+    for i in range(200):
+        env.expect('del', 'doc%d'%i)
+
+    env.expect('FT.DEBUG', 'DUMP_TERMS', 'idx').equal(['foo'])
+    env.expect('FT.DEBUG', 'GC_FORCEINVOKE', 'idx')
+    env.expect('FT.DEBUG', 'DUMP_TERMS', 'idx').equal([])
+
