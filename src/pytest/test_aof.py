@@ -23,6 +23,7 @@ def aofTestCommon(env, reloadfn):
         waitForIndex(env, 'idx')
         ret = env.cmd('ft.search', 'idx', 'myt*')
         env.assertEqual(toSortedFlatList(ret), toSortedFlatList(exp))
+        env.cmd('flushall')
 
 def testAof():
     env = Env(useAof=True)
