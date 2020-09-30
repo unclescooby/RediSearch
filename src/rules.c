@@ -248,6 +248,7 @@ int SchemaRule_RdbLoad(IndexSpec *sp, RedisModuleIO *rdb, int encver) {
   } else {
     rule->score_default = score_default;
     rule->lang_default = lang_default;
+    if (sp->rule) SchemaRule_Free(sp->rule);
     sp->rule = rule;
   }
 
